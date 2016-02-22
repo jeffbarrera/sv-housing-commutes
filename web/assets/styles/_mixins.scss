@@ -1,0 +1,197 @@
+@mixin bg-size-polyfill {
+    -ms-behavior: url(scripts/backgroundsize.min.htc);
+}
+
+@mixin underline-link($color, $darken_pct: 10%) {
+	color: $color;
+	border-bottom: 1px solid rgba(0,0,0,0);
+	transition: all $transition-time-ease;
+
+	&:hover {
+		border-color: $color;
+    }
+
+    &:active {
+        color: darken($color, $darken_pct);
+        border-color: darken($color, $darken_pct);
+    }
+}
+
+@mixin bg-img-cover() {
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    @include bg-size-polyfill;
+}
+
+
+// breakpoint mixin
+@mixin bp($width) {
+  @if $width == bp-max {
+    @media (min-width: $breakpoint-max) { @content; }
+  }
+  @else if $width == bp-mobile {
+    @media (max-width: $breakpoint-mobile) { @content; }
+  }
+  @else if $width == bp-not-mobile {
+    @media (min-width: ($breakpoint-mobile + 1)) { @content; }
+  }
+  @else {
+    @media (max-width: $width) { @content; }
+  }
+}
+
+// hamburger nav icon
+@mixin hamburger-icon($icon-size, $bar-color, $variant: cross, $bar-height: 3px, $transition-duration: 0.2s, $icon-padding: 8px) {
+    
+    // calculate spacing
+    $bar-spacing: ($icon-size - ($bar-height * 1.5)) / 2;
+
+    //base layout
+    display: block;
+    width: $icon-size + (2 * $icon-padding);
+    height: $icon-size + (2 * $icon-padding);
+    padding: $icon-padding;
+    box-sizing: border-box;
+
+    // hide text
+    overflow: hidden;
+    font-size: 0;
+    text-indent: -9999px;
+    appearance: none;
+    position: relative;
+
+    &:focus {
+        outline: none;
+    }
+
+    // span element to build icon from
+    span {
+        position: absolute;
+        display: block;
+        background-color: $bar-color;
+        height: $bar-height;
+        top: ($bar-height * 2) + $bar-spacing + ($icon-padding / 2);
+        left: $icon-padding;
+        right: $icon-padding;
+
+        &::before,
+        &::after {
+            position: absolute;
+            display: block;
+            left: 0;
+            width: 100%;
+            height: $bar-height;
+            background-color: $bar-color;
+            content: "";
+        }
+
+        &::before {
+            top: $bar-spacing * -1;
+        }
+
+        &::after {
+            bottom: $bar-spacing * -1;
+        }
+    }
+
+    // cross variant
+    @if $variant == cross {
+        span {
+            transition: background 0s $transition-duration;
+
+            &::before,
+            &::after {
+                transition-duration: $transition-duration, $transition-duration;
+                transition-delay: $transition-duration, 0s;
+            }
+
+            &::before {
+                transition-property: top, transform;
+            }
+
+            &::after {
+                transition-property: bottom, transform;
+            }
+        }
+
+        // open state
+        &.open {
+            span {
+                background: none;
+
+                &::before,
+                &::after {
+                    transition-delay: 0s, $transition-duration;
+                }
+
+                &::before {
+                    top: 0;
+                    transform: rotate(45deg);
+                }
+
+                &::after {
+                    bottom: 0;
+                    transform: rotate(-45deg);
+                }
+            }
+        }
+    }
+
+    // right arrow variant
+    @else if $variant == arrow-right {
+        span {
+            transition: transform $transition-duration;
+
+            &::before {
+                transform-origin: top left;
+                transition: transform $transition-duration, width $transition-duration, top $transition-duration;
+            }
+
+            &::after {
+                transform-origin: bottom left;
+                transition: transform $transition-duration, width $transition-duration, bottom $transition-duration;
+            }
+        }
+
+        //open state
+        &.open {
+            span {
+                transform: rotate(180deg);
+
+                &::before,
+                &::after {
+                    width: 50%;
+                }
+
+                &::before {
+                    top: 0;
+                    transform: translateX(-$bar-height) translateY($bar-height / 2) rotate(-45deg);
+                }
+
+                &::after {
+                    bottom: 0;
+                    transform: translateX(-$bar-height) translateY($bar-height / -2) rotate(45deg);
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

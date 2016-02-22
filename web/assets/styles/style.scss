@@ -1,0 +1,275 @@
+// reset and helpers
+@import "reset";
+
+// Constants
+$transition-time-ease: .2s ease;
+
+
+/*********
+GENERAL STYLES
+*********/
+
+/*Colors*/
+$slate: #58646D;
+$blue: #5683B0;
+$grey-mid: #888;
+$grey-light: #ccc;
+$grey-dark: #666;
+$red-dark: #8c1515;
+$black: #444;
+$red-light: lighten($red-dark, 10%);
+
+body {width: 100%;
+	height: 100%;
+	font-size: 1em;
+	padding: 0;
+	font-family: 'Source Sans Pro', 'Helvetica', sans-serif;
+	box-sizing: border-box;
+	text-align: center;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1 {
+	font-family: 'Oswald', 'Helvetica', sans-serif;
+	font-weight: 500;
+	font-size: 1.55em;
+	color: $black;
+	text-align: center;
+	margin-bottom: .5em;
+    margin-top: .5em;
+}
+
+h2 {
+	font-family: 'Oswald', 'Helvetica', sans-serif;
+	// font-family: 'Merriweather', 'Georgia', serif;
+	font-weight: 400;
+	font-size: 1.55em;
+	color: $black;
+	text-align: center;
+    // border-top: 1px solid $grey-light;
+    margin: 1.5em auto 1em;
+    padding-top: 1em;
+    max-width: 540px;
+}
+
+p {
+	font-size: 1.125em;
+	line-height: 1.3;
+	color: $black;
+	text-align: left;
+	max-width: 30em;
+	margin: 0 auto 1.5em;
+}
+
+
+/*********
+BASIC LAYOUT
+*********/
+
+.article {
+	margin: 0 auto;
+	padding: 3em;
+	max-width: 900px;
+
+	> p:first-of-type:first-letter {
+		font-size: 70px;
+		float: left;
+		line-height: 60px;
+		padding: 4px 10px 0 0;
+	}
+}
+
+.article__title {
+	font-size: 2.5em;
+	margin-bottom: 1em;
+}
+
+
+/*********
+Data Graphics
+*********/
+
+.figure {
+	width: 100%;
+	box-sizing: border-box;
+	// border: 1px solid #000;
+	margin: 3em 0;
+	position: relative;
+}
+
+.figure__info {
+	font-size: .875em;
+	font-style: italic;
+	color: $slate;
+	text-align: left;
+	margin-top: 1em;
+	margin-left: 1em;
+}
+
+// SVG elements
+svg {
+
+	// axis stuff
+	.axis path,
+	.axis line {
+	  fill: none;
+	  stroke: $grey-light;
+	  shape-rendering: crispEdges;
+	}
+
+	.tick text {
+		fill: $grey-mid;
+		font-size: .875em;
+	}
+
+	.axis__label {
+		fill: $grey-dark;
+		font-weight: bold;
+		font-size: .875em;
+	}
+
+	// points
+	.dot {
+		fill: $red-dark;
+		fill: $black;
+	}
+
+	// trendline
+	.trendline {
+		stroke: $grey-light;
+		opacity: .5;
+		stroke-width: 8px;
+	}
+}
+
+.plot--left-axis {
+	margin-left: -50px;
+}
+
+//
+// tooltips
+//
+.tooltip {
+	$tooltip-width: 280px;
+	$tooltip-bg: rgba(70,70,70,.8);
+	$tooltip-bg: $grey-dark;
+	position: absolute;
+	display: block;
+	opacity: 0;
+	z-index: 10;
+	transition: opacity $transition-time-ease;
+	width: $tooltip-width;
+	margin-left: $tooltip-width / -2;
+	margin-top: -20px;
+	transform: translateY(-100%);
+	background-color: $tooltip-bg;
+	color: #fff;
+	border: 1px solid #fff;
+	// box-shadow: 0 1px 3px rgba(0,0,0,.3);
+	box-sizing: border-box;
+	border-radius: 5px;
+	padding: .75em 1em;
+	text-align: left;
+
+	// triangle
+	&::before {
+		$triangle-size: 10px;
+		content: '';
+		display: block;
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		margin-left: ($triangle-size / -2) - 4px;
+		width: 0; 
+		height: 0; 
+		border-left: $triangle-size solid transparent;
+		border-right: $triangle-size solid transparent;
+		border-top: $triangle-size solid $tooltip-bg;
+	}
+}
+
+.tooltip__heading {
+	font-size: .875em;
+	margin-bottom: .6em;
+}
+
+.tooltip__info {
+	color: #fff;
+	font-size: .875em;
+	margin-bottom: .1em;
+}
+
+.tooltip__info--new-section {
+	margin-top: .6em;
+}
+
+
+
+// 
+// plot toggles
+//
+.plot-toggle {
+	width: 100%;
+	box-sizing: border-box;
+	max-width: 300px;
+	margin: .5em auto 1.5em;
+	display: table;
+}
+
+.plot-toggle__btn {
+	display: table-cell;
+	width: 50%;
+	box-sizing: border-box;
+	background-color: lighten($grey-light, 10%);
+	border: 1px solid $grey-dark;
+	padding: .4em .25em;
+	color: $black;
+	transition: all $transition-time-ease;
+
+	$toggle-btn-radius: 5px;
+
+	// round corners
+	&:first-child {
+		border-radius: $toggle-btn-radius 0 0 $toggle-btn-radius;
+		border-right: 0;
+	}
+
+	&:last-child {
+		border-radius: 0 $toggle-btn-radius $toggle-btn-radius 0;
+	}
+
+	// hover styles
+	&:hover {
+		color: $red-light;
+	}
+
+
+}
+
+.plot-toggle__btn--selected {
+	background-color: #FFF;
+
+	// hover styles
+	&:hover {
+		color: $black;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
