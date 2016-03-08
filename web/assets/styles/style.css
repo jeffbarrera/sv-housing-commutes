@@ -421,9 +421,9 @@ h2 {
   font-weight: 400;
   font-size: 1.55em;
   color: #444;
-  text-align: center;
+  text-align: left;
   margin: 1.5em auto 1em;
-  padding-top: 1em;
+  padding-top: .5em;
   max-width: 540px; }
 
 p {
@@ -433,6 +433,13 @@ p {
   text-align: left;
   max-width: 30em;
   margin: 0 auto 1.5em; }
+
+a {
+  color: #5683B0;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease; }
+  a:hover {
+    border-color: #5683B0; }
 
 /*********
 BASIC LAYOUT
@@ -452,6 +459,24 @@ BASIC LAYOUT
   margin-bottom: 1em; }
 
 /*********
+GRID
+*********/
+.grid {
+  margin: 3.5em auto 2.5em; }
+
+.no-flexbox .grid__item {
+  display: inline-block;
+  width: 48%; }
+
+.flexbox .grid {
+  display: flex; }
+
+.flexbox .grid__item {
+  flex-grow: 1;
+  width: 50%;
+  min-width: 300px; }
+
+/*********
 Data Graphics
 *********/
 .figure {
@@ -459,6 +484,16 @@ Data Graphics
   box-sizing: border-box;
   margin: 3em 0;
   position: relative; }
+
+.figure--small {
+  width: 100%;
+  max-width: 43em;
+  box-sizing: border-box;
+  margin: 2em auto;
+  position: relative; }
+
+.figure--two-aside {
+  margin: .5em auto; }
 
 .figure__info {
   font-size: .875em;
@@ -468,25 +503,87 @@ Data Graphics
   margin-top: 1em;
   margin-left: 1em; }
 
-svg .axis path,
-svg .axis line {
+.figure__info--push-left {
+  margin-left: 5em; }
+
+.figure__heading {
+  color: #444; }
+
+/**** axes ****/
+.axis path,
+.axis line {
   fill: none;
   stroke: #ccc;
   shape-rendering: crispEdges; }
-svg .tick text {
+
+.tick text {
   fill: #888;
   font-size: .875em; }
-svg .axis__label {
+
+.axis__label {
   fill: #666;
   font-weight: bold;
   font-size: .875em; }
-svg .dot {
+
+.dot {
   fill: #8c1515;
-  fill: #444; }
-svg .trendline {
+  fill: #666; }
+
+.trendline {
   stroke: #ccc;
   opacity: .5;
   stroke-width: 8px; }
+
+.line {
+  stroke-width: 5px;
+  stroke: #666;
+  fill: none; }
+
+.line--workers {
+  stroke: #8c1515; }
+
+.line__label {
+  font-size: .875em;
+  fill: #666; }
+
+.line__label--workers {
+  fill: #8c1515; }
+
+#rents-line .line {
+  stroke-width: 3px; }
+
+#rents-line .line__group .line {
+  opacity: 0.5;
+  transition: all 0.2s ease; }
+#rents-line .line__group .line__label {
+  pointer: cursor;
+  opacity: 0.7;
+  transition: all 0.2s ease; }
+#rents-line .line__group:hover .line {
+  opacity: 1;
+  stroke: #b81c1c;
+  stroke-width: 5px; }
+#rents-line .line__group:hover .line__label {
+  opacity: 1;
+  fill: #b81c1c; }
+
+.tornado__bar--workers {
+  fill: #8c1515; }
+
+.tornado__bar--housing {
+  fill: #666; }
+
+.tornado__label {
+  fill: #666;
+  font-size: .875em; }
+
+.tornado__key-label {
+  font-weight: bold;
+  text-transform: uppercase;
+  fill: #666; }
+
+.tornado__key-label--workers {
+  fill: #8c1515; }
 
 .plot--left-axis {
   margin-left: -50px; }
@@ -561,5 +658,20 @@ svg .trendline {
   background-color: #FFF; }
   .plot-toggle__btn--selected:hover {
     color: #444; }
+
+.story-notes {
+  max-width: 540px;
+  border-top: 1px solid #888;
+  padding-top: 1em;
+  margin: 0 auto; }
+  .story-notes h3 {
+    text-align: left;
+    color: #888;
+    max-width: 100%;
+    margin-bottom: .5em; }
+  .story-notes p {
+    font-size: .875em;
+    color: #888;
+    max-width: 100%; }
 
 /*# sourceMappingURL=style.css.map */

@@ -5,36 +5,25 @@ CREDITS
 *********/
 
 
+/*********
+HELPER FUNCTIONS
+**********/
 
-// function to make numbers more readable
-// from http://stackoverflow.com/questions/3883342/add-commas-to-a-number-in-jquery
-function commaSeparateNumber(val) {
-    while (/(\d+)(\d{3})/.test(val.toString())){
-      val = val.toString().replace(/(\d+)(\d{3})/, '$1'+','+'$2');
-    }
-    return val;
+var commaSeparateNumber = d3.format("0,");
+var formatPercent = d3.format(".0%");
+var formatPercentWhole = function(d) { return d + "%"; }
+var formatDollars = d3.format("$0,");
+
+var makeSlug = function(str) {
+    slug = str.replace(/[^a-z0-9-]/gi, '-').
+    	replace(/-+/g, '-').
+    	replace(/^-|-$/g, '');
+    return slug.toLowerCase();
 }
 
-// function to round to a set number of decimal points
-// from http://stackoverflow.com/questions/1726630/javascript-formatting-number-with-exactly-two-decimals
-function roundToDigit(value, exp) {
-  if (typeof exp === 'undefined' || +exp === 0)
-    return Math.round(value);
-
-  value = +value;
-  exp = +exp;
-
-  if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0))
-    return NaN;
-
-  // Shift
-  value = value.toString().split('e');
-  value = Math.round(+(value[0] + 'e' + (value[1] ? (+value[1] + exp) : exp)));
-
-  // Shift back
-  value = value.toString().split('e');
-  return +(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp));
-}
+// TIME PARSERS
+var parseYear = d3.time.format("%Y").parse;
+var parseYearMonth = d3.time.format("%Y_%m").parse;
 
 
 // least squares regression for trendlines
@@ -56,318 +45,861 @@ function leastSquares(xSeries, ySeries) {
 		
 	var slope = ssXY / ssXX;
 	var intercept = yBar - (xBar * slope);
-	var rSquare = Math.pow(ssXY, 2) / (ssXX * ssYY);
+	// var rSquare = Math.pow(ssXY, 2) / (ssXX * ssYY);
 	
-	return [slope, intercept, rSquare];
+	return [slope, intercept];
+}
+
+function getTrendlinePoints(xSeries, ySeries, xScale, yScale) {
+
+	// run ols
+	var leastSquaresCoeff = leastSquares(xSeries, ySeries);
+	var slope = leastSquaresCoeff[0];
+	var intercept = leastSquaresCoeff[1];
+	
+	// apply the results of the least squares regression
+	var x1 = d3.min(xSeries);
+	var y1 = intercept + slope * x1;
+	var x2 = d3.max(xSeries);
+	var y2 = intercept + slope * x2;
+
+	// scale values
+	var scaleX1 = xScale(x1);
+	var scaleY1 = yScale(y1);
+	var scaleX2 = xScale(x2);
+	var scaleY2 = yScale(y2);
+
+	return [scaleX1, scaleY1, scaleX2, scaleY2];
 }
 
 
+/**********
+Shared chart pieces
+**********/
+
+function buildChartWrapper(wrapper_id, margin) {
+	
+	var wrapper = d3.select(wrapper_id);
+	var wrapper_width = wrapper.node().getBoundingClientRect().width;
+
+	var width = wrapper_width - margin.left - margin.right,
+		height = (width * .66) - margin.top - margin.bottom;
+
+	var svg = wrapper.insert("svg", ":first-child")
+		.attr("class", "plot--left-axis")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+	  .append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	return [wrapper, svg, width, height];
+}
 
 /*********
 Pop growth by income/rent scatterplot
 *********/
 
-function drawScatterplotToggle(wrapper_id, dataset, x1_col, x2_col, y_col, x1_axis_label, x2_axis_label, y_axis_label, x1_btn_id, x2_btn_id) {
+function scatterplot(wrapper_id, data, cols, labels, axis_formats, btn_ids,  buildTooltipFunction, updateTooltipFunction) {
+
+	/*************
+	PlOT BASICS
+	*************/
+
+	var margin = {top: 10, right: 0, bottom: 60, left: 70};
+
+	var wrapper_elements = buildChartWrapper(wrapper_id, margin);
+	var wrapper = wrapper_elements[0],
+		svg = wrapper_elements[1],
+		width = wrapper_elements[2],
+		height = wrapper_elements[3];
 	
-	
-}
-
-
-// load dataset
-d3.csv("assets/data/acs_data.csv", function(data) {
-
-	// clean dataset
-	data = data.filter(function(d){
-        if(isNaN(d.med_rent_est) || isNaN(d.pop_change_p || isNaN(d.med_hh_income_est))) {
-            return false;
-        }
-        d.med_rent_est = + d.med_rent_est;
-        d.pop_change_p = +d.pop_change_p
-        d.med_hh_income_est = + d.med_hh_income_est;
-        return true;
-    });
-
-    // prep pop-income scatterplot
-
-	// dimensions
-	var wrapper = d3.select('#pop-rent-income');
-	var wrapper_width = wrapper.node().getBoundingClientRect().width;
-
-	var margin = {top: 0, right: 0, bottom: 60, left: 70},
-	    width = wrapper_width - margin.left - margin.right,
-	    height = (width * .66) - margin.top - margin.bottom;
-
-	var svg = wrapper.insert("svg", ":first-child")
-		.attr("class", "plot--left-axis")
-	    .attr("width", width + margin.left + margin.right)
-	    .attr("height", height + margin.top + margin.bottom)
-	  .append("g")
-	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
+	/*************
+	SCALES
+	*************/
 
 	// extract values to build scales more efficiently
-	med_rent_est = data.map(function(d) {return d.med_rent_est; });
-	med_hh_income_est = data.map(function(d) {return d.med_hh_income_est; });
-	pop_change_p = data.map(function(d) {return d.pop_change_p; });
+	var x1_series = data.map(function(d) {return d[cols.x1]; });
+	var y1_series = data.map(function(d) {return d[cols.y1]; });
 
-	med_rent_est_padding = d3.deviation(med_rent_est) / 10;
-	med_hh_income_est_padding = d3.deviation(med_hh_income_est) / 10;
-	pop_change_p_padding = d3.deviation(pop_change_p) / 8;
+	var x1_padding = d3.deviation(x1_series) / 10;
+	var y1_padding = d3.deviation(y1_series) / 8;
+
+	var activeXseries = x1_series,
+		activeYseries = y1_series;
 
 	// prep scales
-	var xScale_rent = d3.scale.linear()
+	var x1_scale = d3.scale.linear()
 		.domain([
-			d3.min(med_rent_est) - med_rent_est_padding,
-			d3.max(med_rent_est) + med_rent_est_padding
+			d3.min(x1_series) - x1_padding,
+			d3.max(x1_series) + x1_padding
 		])
-	    .range([0, width]);
+		.range([0, width]);
 
-	var xScale_income = d3.scale.linear()
+	var y1_scale = d3.scale.linear()
 		.domain([
-			d3.min(med_hh_income_est) - med_hh_income_est_padding,
-			d3.max(med_hh_income_est) + med_hh_income_est_padding
+			d3.min(y1_series) - y1_padding,
+			d3.max(y1_series) + y1_padding
 		])
-	    .range([0, width]);
+		.range([height, 0]);
 
-	var yScale = d3.scale.linear()
-		.domain([
-			d3.min(pop_change_p) - pop_change_p_padding,
-			d3.max(pop_change_p) + pop_change_p_padding
-		])
-	    .range([height, 0]);
-
-	var activeXscale = xScale_rent;
+	var activeXscale = x1_scale,
+		activeYscale = y1_scale;
 
 	// prep axes
-	var formatPercent = d3.format(".0%");
 
-	var xAxisRent = d3.svg.axis()
-	    .scale(xScale_rent)
-	    .orient("bottom");
+	var x1_axis = d3.svg.axis()
+		.scale(x1_scale)
+		.orient("bottom");
 
-	var xAxisIncome = d3.svg.axis()
-	    .scale(xScale_income)
-	    .orient("bottom");
+	if (axis_formats.x1 !== null) {
+		x1_axis.tickFormat(axis_formats.x1);
+	}
 
-	var yAxis = d3.svg.axis()
-	    .scale(yScale)
-	    .orient("left")
-	    .tickFormat(formatPercent);
+	var y1_axis = d3.svg.axis()
+		.scale(y1_scale)
+		.orient("left");
+
+	if (axis_formats.y1 !== null) {
+		y1_axis.tickFormat(axis_formats.y1);
+	}
+
+	// prep second x axis if one
+	if (cols.x2 !== null) {
+
+		var x2_series = data.map(function(d) {return d[cols.x2]; });
+		var x2_padding = d3.deviation(x2_series) / 10;
+
+		var x2_scale = d3.scale.linear()
+			.domain([
+				d3.min(x2_series) - x2_padding,
+				d3.max(x2_series) + x2_padding
+			])
+			.range([0, width]);
+
+		var x2_axis = d3.svg.axis()
+			.scale(x2_scale)
+			.orient("bottom");
+
+		if (axis_formats.x2 !== null) {
+			x2_axis.tickFormat(axis_formats.x2);
+		}
+	}
+
+	// prep second y axis if one
+	if (cols.y2 !== null) {
+
+		var y2_series = data.map(function(d) {return d[cols.y2]; });
+		var y2_padding = d3.deviation(y2_series) / 8;
+
+		var y2_scale = d3.scale.linear()
+			.domain([
+				d3.min(y2_series) - y2_padding,
+				d3.max(y2_series) + y2_padding
+			])
+			.range([height, 0]);
+
+		var y2_axis = d3.svg.axis()
+			.scale(y2_scale)
+			.orient("left");
+
+		if (axis_formats.y2 !== null) {
+			y2_axis.tickFormat(axis_formats.y2);
+		}
+	}
 
 
-	// build graph
+	/*************
+	AXES
+	*************/
 
-	// axes
 	svg.append("g")
-	      .attr("class", "x axis")
-	      .attr("transform", "translate(0," + height + ")")
-	      .call(xAxisRent)
-	    .append("text")
-	      .attr("class", "axis__label")
-	      .attr("x", width / 2)
-	      .attr("y", 50)
-	      .style("text-anchor", "middle")
-	      .text("Median Monthly Rent");
+		  .attr("class", "x axis")
+		  .attr("transform", "translate(0," + height + ")")
+		  .call(x1_axis)
+		.append("text")
+		  .attr("class", "axis__label")
+		  .attr("x", width / 2)
+		  .attr("y", 50)
+		  .style("text-anchor", "middle")
+		  .text(labels.x1);
 
 	svg.append("g")
 		.attr("class", "y axis")
-		.call(yAxis)
+		.call(y1_axis)
 	  .append("text")
 		.attr("class", "axis__label")
 		.attr("transform", "rotate(-90)")
-		.attr("y", -45)
+		.attr("y", -60)
 		.attr("x", height / -2)
 		.style("text-anchor", "middle")
-		.text("Population Growth")
+		.text(labels.y1)
+
 
 	/*************
 	TRENDLINE
 	*************/
 
-	function getTrendlinePoints(xSeries, ySeries) {
-		// run ols
-		var leastSquaresCoeff = leastSquares(xSeries, ySeries);
-		var slope = leastSquaresCoeff[0];
-		var intercept = leastSquaresCoeff[1];
-		
-		// apply the results of the least squares regression
-		var x1 = d3.min(xSeries);
-		var y1 = intercept + slope * x1;
-		var x2 = d3.max(xSeries);
-		var y2 = intercept + slope * x2;
+	var trendPoints = getTrendlinePoints(activeXseries, activeYseries, activeXscale, activeYscale);
 
-		// scale values
-		var scaleX1 = activeXscale(x1);
-		var scaleY1 = yScale(y1);
-		var scaleX2 = activeXscale(x2);
-		var scaleY2 = yScale(y2);
-
-		return [scaleX1, scaleY1, scaleX2, scaleY2];
-	}
-
-	function plotTrendline(xSeries, ySeries) {
-		
-		trendPoints = getTrendlinePoints(xSeries, ySeries);
-		
-		var trendline = svg.append("line")
-			.attr("class", "trendline")
-			.attr("x1", trendPoints[0])
-			.attr("y1", trendPoints[1])
-			.attr("x2", trendPoints[2])
-			.attr("y2", trendPoints[3]);
-
-		return trendline;
-	}
-
-	var trendline = plotTrendline(med_rent_est, pop_change_p);
+	var trendline = svg.append("line")
+				.attr("class", "trendline")
+				.attr("x1", trendPoints[0])
+				.attr("y1", trendPoints[1])
+				.attr("x2", trendPoints[2])
+				.attr("y2", trendPoints[3]);
 
 	/*************
 	DATA POINTS
 	*************/
 
 	var points = svg.selectAll(".dot")
-	    .data(data)
+		.data(data)
 	  .enter().append("circle")
 		.attr("class", "dot")
 		.attr("r", 4.5)
-		.attr("cx", function(d) { return xScale_rent(d.med_rent_est); })
-		.attr("cy", function(d) { return yScale(d.pop_change_p); });
+		.attr("cx", function(d) { return activeXscale(d[cols.x1]); })
+		.attr("cy", function(d) { return activeYscale(d[cols.y1]); });
 
 	/*************
-	TOOLTIP
+	TOOLTIPS
 	*************/
 
-	// build tooltip
-	var tooltip = wrapper.append('div')
-		.attr("class", "tooltip");
+	if (buildTooltipFunction !== null) {
 
-	var tt_heading = tooltip.append('h3')
-			.attr('class', 'tooltip__heading');
-	var tt_income = tooltip.append('p')
-			.attr('class', 'tooltip__info');
-	var tt_rent = tooltip.append('p')
-			.attr('class', 'tooltip__info');
-	var tt_pop2010 = tooltip.append('p')
-			.attr('class', 'tooltip__info tooltip__info--new-section');
-	var tt_pop2014 = tooltip.append('p')
-			.attr('class', 'tooltip__info');
-	var tt_popChange = tooltip.append('p')
-			.attr('class', 'tooltip__info tooltip__info--new-section');
+		var tooltip_elements = buildTooltipFunction(wrapper);
+		var tooltip = tooltip_elements[0];
 
+		function mouseoverHandler(d, i) {
 
-	function mouseoverHandler(d, i) {
+			// select which x var to use as axis
+			raw_x_val = null;
 
-		// select which x var to use as axis
-		raw_x_val = null;
+			if (activeXscale == x1_scale) {
+				raw_x_val = d[cols.x1];
+			} else if (activeXscale == x2_scale) {
+				raw_x_val = d[cols.x2];
+			}
 
-		if (activeXscale == xScale_rent) {
-			raw_x_val = d.med_rent_est;
-		} else if (activeXscale == xScale_income) {
-			raw_x_val = d.med_hh_income_est;
+			// select which y var to use as axis
+			raw_y_val = null;
+
+			if (activeYscale == y1_scale) {
+				raw_y_val = d[cols.y1];
+			} else if (activeYscale == y2_scale) {
+				raw_y_val = d[cols.y2];
+			}
+
+			// get positions for tooltip
+			xPos = Math.round(activeXscale(raw_x_val) + margin.left/2 + 9);
+			yPos = Math.round(activeYscale(raw_y_val));
+
+			// move tooltip
+			tooltip.style('opacity', 1)
+				.style('z-index', 10)
+				.style("left", xPos + "px")
+				.style("top", yPos + "px");
+
+			// update tooltip values
+			updateTooltipFunction(tooltip_elements, d);
 		}
 
-		// get positions for tooltip
-		xPos = Math.round(activeXscale(raw_x_val) + margin.left/2 + 9);
-		yPos = Math.round(yScale(d.pop_change_p));
+		function mouseoutHandler(d,i) {
+			tooltip.style('opacity', 0)
+				.style('z-index', -1);
+		}
 
-		// move tooltip
-		tooltip.style('opacity', 1)
-			.style('z-index', 10)
-			.style("left", xPos + "px")
-			.style("top", yPos + "px");
+		points.on("mouseover", mouseoverHandler)
+			.on("mouseout", mouseoutHandler);
 
-		//set tooltip values
-		tt_heading.text(d['GEO.display.label.x']);
-		tt_income.text('Median Household Income: $' + commaSeparateNumber(d.med_hh_income_est));
-		tt_rent.text('Median Rent: $' + commaSeparateNumber(d.med_rent_est));
-		tt_pop2010.text('2010 Pop. ' + commaSeparateNumber(d.pop_2010));
-		tt_pop2014.text('2014 Pop. ' + commaSeparateNumber(d.pop_2014));
-		tt_popChange.text('Pop. Growth: ' + roundToDigit(d.pop_change_p * 100, 1) + '%');
 	}
-
-	function mouseoutHandler(d,i) {
-		tooltip.style('opacity', 0)
-			.style('z-index', -1);
-	}
-
-	points.on("mouseover", mouseoverHandler)
-		.on("mouseout", mouseoutHandler);
 
 	/*************
 	TOGGLE GRAPH
 	*************/
 
-	// toggle graph based on button clicks
-	d3.select('#pop-plot-toggle-rent').on("click", function() {
+	// toggle x axis
 
-		// set active xScale to use in tooltips
-		activeXscale = xScale_rent;
+	if (cols.x2 !== null) {
 
-		// toggle selected classes
-		d3.select(this).classed("plot-toggle__btn--selected", true);
-		d3.select("#pop-plot-toggle-income").classed("plot-toggle__btn--selected", false);
+		// toggle graph based on button clicks
+		d3.select(btn_ids.x1).on("click", function() {
 
-		// change trendline
-		trendPoints = getTrendlinePoints(med_rent_est, pop_change_p);
-		trendline.transition()
+			// set active xScale and xSeries
+			activeXscale = x1_scale;
+			activeXseries = x1_series;
+
+			// toggle selected classes
+			d3.select(this).classed("plot-toggle__btn--selected", true);
+			d3.select(btn_ids.x2).classed("plot-toggle__btn--selected", false);
+
+			// change trendline
+			trendPoints = getTrendlinePoints(activeXseries, activeYseries, activeXscale, activeYscale);
+
+			trendline.transition()
+				.duration(1000)
+				.attr("x1", trendPoints[0])
+				.attr("y1", trendPoints[1])
+				.attr("x2", trendPoints[2])
+				.attr("y2", trendPoints[3]);
+
+			// move points
+			points.transition()
 			.duration(1000)
-			.attr("x1", trendPoints[0])
-			.attr("y1", trendPoints[1])
-			.attr("x2", trendPoints[2])
-			.attr("y2", trendPoints[3]);
+			.attr("cx", function(d) { return activeXscale(d[cols.x1]); });
 
-		// move points
-		points.transition()
-		.duration(1000)
-		.attr("cx", function(d) { return xScale_rent(d.med_rent_est); });
-
-		// change x axis
-		d3.select('g.x.axis')
-			.transition()
-			.duration(500)
-			.call(xAxisRent)
-			.select('text.axis__label')
-				.text("Median Monthly Rent");
-	});
+			// change x axis
+			svg.select('g.x.axis')
+				.transition()
+				.duration(500)
+				.call(x1_axis)
+				.select('text.axis__label')
+					.text(labels.x1);
+		});
 
 
+		d3.select(btn_ids.x2).on("click", function() {
 
-	d3.select('#pop-plot-toggle-income').on("click", function() {
+			// set active xScale to use in tooltips
+			activeXscale = x2_scale;
+			activeXseries = x2_series;
 
-		// set active xScale to use in tooltips
-		activeXscale = xScale_income;
+			// toggle selected classes
+			d3.select(this).classed("plot-toggle__btn--selected", true);
+			d3.select(btn_ids.x1).classed("plot-toggle__btn--selected", false);
 
-		// toggle selected classes
-		d3.select(this).classed("plot-toggle__btn--selected", true);
-		d3.select("#pop-plot-toggle-rent").classed("plot-toggle__btn--selected", false);
+			// change trendline
+			trendPoints = getTrendlinePoints(activeXseries, activeYseries, activeXscale, activeYscale);
 
-		// change trendline
-		trendPoints = getTrendlinePoints(med_hh_income_est, pop_change_p);
-		trendline.transition()
-			.duration(1000)
-			.attr("x1", trendPoints[0])
-			.attr("y1", trendPoints[1])
-			.attr("x2", trendPoints[2])
-			.attr("y2", trendPoints[3]);
+			trendline.transition()
+				.duration(1000)
+				.attr("x1", trendPoints[0])
+				.attr("y1", trendPoints[1])
+				.attr("x2", trendPoints[2])
+				.attr("y2", trendPoints[3]);
 
-		// move points
-		points.transition()
-		.duration(1000)
-		.attr("cx", function(d) { return xScale_income(d.med_hh_income_est); });
+			// move points
+			points.transition()
+				.duration(1000)
+				.attr("cx", function(d) { return activeXscale(d[cols.x2]); });
 
-		// change x axis
-		d3.select('g.x.axis')
-			.transition()
-			.duration(500)
-			.call(xAxisIncome)
-			.select('text.axis__label')
-				.text("Median Household Income");
-	});
+			// change x axis
+			svg.select('g.x.axis')
+				.transition()
+				.duration(500)
+				.call(x2_axis)
+				.select('text.axis__label')
+					.text(labels.x2);
+		});
+	}
 
-
+	// toggle y axis
 	
+	if (cols.y2 !== null) {
+
+		// toggle graph based on button clicks
+		d3.select(btn_ids.y1).on("click", function() {
+
+			// set active xScale to use in tooltips
+			activeYscale = y1_scale;
+			activeYseries = y1_series;
+
+			// toggle selected classes
+			d3.select(this).classed("plot-toggle__btn--selected", true);
+			d3.select(btn_ids.y2).classed("plot-toggle__btn--selected", false);
+
+			// change trendline
+			trendPoints = getTrendlinePoints(activeXseries, activeYseries, activeXscale, activeYscale);
+
+			trendline.transition()
+				.duration(1000)
+				.attr("x1", trendPoints[0])
+				.attr("y1", trendPoints[1])
+				.attr("x2", trendPoints[2])
+				.attr("y2", trendPoints[3]);
+
+			// move points
+			points.transition()
+			.duration(1000)
+			.attr("cy", function(d) { return activeYscale(d[cols.y1]); });
+
+			// change y axis
+			svg.select('g.y.axis')
+				.transition()
+				.duration(500)
+				.call(y1_axis)
+				.select('text.axis__label')
+					.text(labels.y1);
+		});
+
+
+		d3.select(btn_ids.y2).on("click", function() {
+
+			// set active yScale
+			activeYscale = y2_scale,
+			activeYseries = y2_series;
+
+			// toggle selected classes
+			d3.select(this).classed("plot-toggle__btn--selected", true);
+			d3.select(btn_ids.y1).classed("plot-toggle__btn--selected", false);
+
+			// change trendline
+			trendPoints = getTrendlinePoints(activeXseries, activeYseries, activeXscale, activeYscale);
+
+			trendline.transition()
+				.duration(1000)
+				.attr("x1", trendPoints[0])
+				.attr("y1", trendPoints[1])
+				.attr("x2", trendPoints[2])
+				.attr("y2", trendPoints[3]);
+
+			// move points
+			points.transition()
+				.duration(1000)
+				.attr("cy", function(d) { return activeYscale(d[cols.y2]); });
+
+			// change x axis
+			svg.select('g.y.axis')
+				.transition()
+				.duration(500)
+				.call(y2_axis)
+				.select('text.axis__label')
+					.text(labels.y2);
+		});
+	}
+}
+
+
+
+/*************
+TORNADO
+*************/
+
+function tornado(wrapper_id, data) {
+
+	// extract values to build scales more efficiently
+	var workers_series = data.map(function(d) {return d.total_workers_2014; });
+	var housing_series = data.map(function(d) {return d.housing_units_est_2014; });
+	var ratio_series = data.map(function(d) {return d.workers_housing_ratio_2014; });
+	var ratio_series = data.map(function(d) {return d.total_workers_2014; });
+
+	// sort ratio series descending
+	ratio_series.sort(function(a, b){return b-a});
+
+	/*************
+	PlOT BASICS
+	*************/
+
+	var wrapper = d3.select(wrapper_id);
+	var wrapper_width = wrapper.node().getBoundingClientRect().width;
+
+	var bar_height = 25,
+		bar_space = 5,
+		label_margin = 70;
+
+	var margin = {top: 35, right: 0, bottom: 0, left: 0},
+		width = wrapper_width - margin.left - margin.right,
+		height = ((bar_height + bar_space) * workers_series.length);
+
+	var svg = wrapper.insert("svg", ":first-child")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+	  .append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	/*************
+	SCALES
+	*************/
+
+	// prep scales
+	var workers_scale = d3.scale.linear()
+		.domain([0, d3.max(workers_series)])
+		.range([0, width/2 - label_margin]);
+
+	var y_scale = d3.scale.linear()
+		.domain([0, ratio_series.length])
+		.range([0, ratio_series.length * (bar_height + bar_space)]).nice();
+
+
+	/*************
+	DRAW BARS
+	*************/
+
+	var rows = svg.selectAll("tornado__row")
+		.data(data)
+	  .enter().append("g")
+		.attr("class", "tornado__row")
+		.attr("width", width)
+		.attr("height", bar_height)
+		.attr("x", 0)
+		.attr("transform", function(d){
+			var index_val = ratio_series.indexOf(d.total_workers_2014);
+			return "translate(0," + y_scale(index_val) + ")";
+		});
+
+	var housing_bars = rows.append("rect")
+		.attr("class", "tornado__bar--housing")
+		.attr("width", function(d){
+			return workers_scale(d.housing_units_est_2014);
+		})
+		.attr("x", width/2 + 1)
+		.attr("height", bar_height);
+
+	var workers_bars = rows.append("rect")
+		.attr("class", "tornado__bar--workers")
+		.attr("width", function(d){
+			return workers_scale(d.total_workers_2014);
+		})
+		.attr("x", function(d){
+			return width/2 - workers_scale(d.total_workers_2014);
+		})
+		.attr("height", bar_height);
+
+	var labels = rows.append("text")
+		.attr("class", "tornado__label")
+		.text(function(d) {
+			return d.clean_name;
+		})
+		.attr("x", function(d){
+			if (d.workers_housing_ratio_2014 > 1) {
+				x = width/2 - workers_scale(d.total_workers_2014) - 10;
+			} else {
+				x = width/2 + workers_scale(d.housing_units_est_2014) + 10;
+			}
+			return x;
+		})
+		.attr("y", 16)
+		.attr("text-anchor", function(d){
+			if (d.workers_housing_ratio_2014 > 1) {
+				return "end";
+			} else {
+				return "start";
+			}
+		});
+
+
+	/*************
+	CHART LABELS
+	*************/
+	var workers_label = svg.append("text")
+		.attr("class", "tornado__key-label tornado__key-label--workers")
+		.text("Workers")
+		.attr("x", width/2 - 10)
+		.attr("y", -20)
+		.attr("text-anchor", "end");
+
+	var housing_label = svg.append("text")
+		.attr("class", "tornado__key-label tornado__key-label--housing")
+		.text("Housing Units")
+		.attr("x", width/2 + 10)
+		.attr("y", -20)
+		.attr("text-anchor", "start");
+}
+
+
+
+/*************
+LINE CHART
+*************/
+
+function line(wrapper_id, margin, data, time_var, line_vars, line_labels, yTickFormat, y_axis_label) {
+
+	/*************
+	PlOT BASICS
+	*************/
+
+	var wrapper = d3.select(wrapper_id);
+	var wrapper_width = wrapper.node().getBoundingClientRect().width;
+
+	var width = wrapper_width - margin.left - margin.right,
+		height = width * .6 - margin.top - margin.bottom;
+
+	var svg = wrapper.insert("svg", ":first-child")
+		.attr("class", "plot--left-axis")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+	  .append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+	/*************
+	SCALES
+	*************/
+
+	dates_series = data.map(function(d) {return d[time_var]});
+
+	// build data series from line_vars
+	lines_series = [];
+
+	for (var i = 0; i < line_vars.length; i++) {
+	    lines_series[i] = data.map(function(d) {return parseFloat(d[line_vars[i]]); });
+	}
+
+	// concat all series to build scales
+	var all_series = [].concat.apply([], lines_series);
+
+	// build scales
+	var xScale = d3.time.scale()
+		.domain(d3.extent(data, function(d) { return d[time_var]; }))
+	    .range([0, width]);
+
+	var yScale = d3.scale.linear()
+		.domain([
+			d3.min(all_series) - d3.deviation(all_series) * .3,
+			d3.max(all_series),
+		])
+	    .range([height, 0]);
+
+	/*************
+	AXES
+	*************/
+
+	// build axes
+	var xAxis = d3.svg.axis()
+	    .scale(xScale)
+	    .orient("bottom")
+	    .ticks(d3.time.month, 12);
+
+	var yAxis = d3.svg.axis()
+	    .scale(yScale)
+	    .orient("left")
+	    .ticks(Math.max(height/40, 2));
+
+	if (yTickFormat !== null) {
+		yAxis.tickFormat(yTickFormat);
+	}
+
+	var xAxisLine = svg.append("g")
+		  .attr("class", "x axis")
+		  .attr("transform", "translate(0," + height + ")")
+		  .call(xAxis);
+
+	var yAxisLine = svg.append("g")
+		.attr("class", "y axis")
+		.call(yAxis);
+
+
+	if (y_axis_label !== null) {
+		yAxisLine.append("text")
+		.attr("class", "axis__label")
+		.attr("transform", "rotate(-90)")
+		.attr("y", -40)
+		.attr("x", height / -2)
+		.style("text-anchor", "middle")
+		.text(y_axis_label)
+	}
+
+
+	/*************
+	LINES
+	*************/
+
+	// loop over values in line_vars array
+	for (var i = 0; i < line_vars.length; i++) {
+
+		var label = line_labels[i];
+
+		// build group
+		var line_group = svg.append("g")
+			.attr("class", "line__group line__group--" + makeSlug(label));
+
+		// build lines
+		var line = d3.svg.line()
+			.x(function(d) {
+			    return xScale(d[time_var]);
+			})
+			.y(function(d) {
+			    return yScale(d[line_vars[i]]);
+			})
+			.interpolate("basis");
+
+		// add line to group
+		line_group.append("path")
+			.attr("d", line(data))
+			.attr("class", "line line--" + makeSlug(label) );
+
+		// add line labels
+		line_group.append("text")
+			.text(label)
+			.attr("x", xScale(d3.max(dates_series)) + 12)
+			.attr("y", yScale(d3.max(lines_series[i])))
+			.attr("class", "line__label line__label--" + makeSlug(label))
+			.attr("alignment-baseline", "middle");
+	}
+
+}
+
+
+/****************************************************
+LOAD DATA
+****************************************************/
+
+// COUNTY-LEVEL DATA
+d3.csv("assets/data/acs_county_data.csv", function(error, data) {
+	if (error) throw error;
+
+	// parse dates
+	data.forEach(function(d) {
+		d["acs_year"] = parseYear(d["acs_year"]);
+	});
+
+	/**** Jobs vs housing line chart ******/
+	var jh_vars = ["workers_total_est", "housing_total_est"];
+	var jh_labels = ["Workers", "Housing Units"];
+	var jh_margin = {top: 20, right: 100, bottom: 30, left: 100};
+
+	var jobs_housing_line = line('#jobs-housing-line', jh_margin, data, "acs_year", jh_vars, jh_labels, null, null);
+
+
+	/**** Commute times line charts ****/
+	var commutes_long_vars = ["commute_60plus"],
+		commutes_mean_vars = ["mean_travel_time"],
+		commutes_labels = [""],
+		commutes_margin = {top: 10, right: 15, bottom: 30, left: 69};
+
+	var commutes_mean_line = line('#commutes-mean-line', commutes_margin, data, "acs_year", commutes_mean_vars, commutes_labels, null, "Minutes", parseYear);
+
+	var commutes_long_line = line('#commutes-long-line', commutes_margin, data, "acs_year", commutes_long_vars, commutes_labels, formatPercentWhole, null);
+
 });
 
 
 
 
+// TIME-SERIES RENT DATA
+d3.csv("assets/data/zillow-rents.csv", function(error, data) {
+	if (error) throw error;
+
+	// parse dates
+	data.forEach(function(d) {
+		d["year_month"] = parseYearMonth(d["year_month"]);
+	});
+
+	/**** rents chart ******/
+	var rents_vars = ["Palo Alto", "Mountain View", "Menlo Park", "San Jose", "Redwood City", "Santa Clara", "Gilroy"];
+	var rents_margin = {top: 20, right: 100, bottom: 30, left: 70};
+
+	var rents_line = line('#rents-line', rents_margin, data, "year_month", rents_vars, rents_vars, formatDollars, null);
+
+});
+
+
+
+
+
+
+
+
+// PLACE-LEVEL DATA
+d3.csv("assets/data/acs_data.csv", function(data) {
+
+	// clean dataset
+	data = data.filter(function(d){
+		if(isNaN(d.zillow_2014_12) || isNaN(d.pop_change_p) || isNaN(d.med_hh_income_est) || isNaN(d.mean_travel_time_2014) ) {
+			return false;
+		}
+		d.zillow_2014_12 = + d.zillow_2014_12;
+		d.pop_change_p = +d.pop_change_p;
+		d.med_hh_income_est = + d.med_hh_income_est;
+		d.mean_travel_time_2014 = +d.mean_travel_time_2014;
+		d.commute_60plus_2014 = +d.commute_60plus_2014;
+		d.total_workers_2014 = +d.total_workers_2014;
+		d.housing_units_est_2014 = +d.housing_units_est_2014;
+		d.workers_housing_ratio_2014 = +d.workers_housing_ratio_2014;
+		return true;
+	});
+
+	console.log(data[0]);
+
+	/**** Pop growth by income scatterplot ******/
+
+	function buildTooltip_popIncome(wrapper) {
+
+		var tooltip = wrapper.append('div')
+		.attr("class", "tooltip");
+
+		var tt_heading = tooltip.append('h3')
+				.attr('class', 'tooltip__heading');
+		var tt_income = tooltip.append('p')
+				.attr('class', 'tooltip__info');
+		var tt_rent = tooltip.append('p')
+				.attr('class', 'tooltip__info');
+		var tt_pop2010 = tooltip.append('p')
+				.attr('class', 'tooltip__info tooltip__info--new-section');
+		var tt_pop2014 = tooltip.append('p')
+				.attr('class', 'tooltip__info');
+		var tt_popChange = tooltip.append('p')
+				.attr('class', 'tooltip__info tooltip__info--new-section');
+
+		return [tooltip, tt_heading, tt_income, tt_rent, tt_pop2010, tt_pop2014, tt_popChange];
+	}
+
+	function updateTooltip_popIncome(tooltip_elements, d) {
+
+		//set tooltip values
+		tooltip_elements[1].text(d['clean_name']);
+		tooltip_elements[2].text('Median Household Income: ' + formatDollars(d.med_hh_income_est));
+		tooltip_elements[3].text('Median Rent: ' + formatDollars(d.zillow_2014_12));
+		tooltip_elements[4].text('2010 Pop. ' + commaSeparateNumber(d.pop_2010));
+		tooltip_elements[5].text('2014 Pop. ' + commaSeparateNumber(d.pop_2014));
+		tooltip_elements[6].text('Pop. Growth: ' + d3.round(d.pop_change_p * 100, 1) + '%');
+	}
+
+	var pop_income_cols = {'x2': "zillow_2014_12", 'x1': 'med_hh_income_est', 'y1': 'pop_change_p', 'y2': null}
+	
+	var pop_income_labels = {'x2': "Median Monthly Rent", 'x1':"Median Household Income", 'y1': "Population Growth", 'y2': null}
+
+	var pop_income_axis_formats = {'x1': formatDollars, 'x2': formatDollars, 'y1': formatPercent, 'y2':null}
+
+	var pop_income_btn_ids = {'x2': "#pop-plot-toggle-rent", 'x1': "#pop-plot-toggle-income", 'y1': null, 'y2':null}
+
+	pop_income_scatterplot = scatterplot('#pop-rent-income-scatterplot', data, pop_income_cols, pop_income_labels, pop_income_axis_formats, pop_income_btn_ids, buildTooltip_popIncome, updateTooltip_popIncome);
+
+
+
+	/**** Income by median commute time scatterplot ******/
+
+	function buildTooltip_incomeCommute(wrapper) {
+
+		var tooltip = wrapper.append('div')
+		.attr("class", "tooltip");
+
+		var tt_heading = tooltip.append('h3')
+				.attr('class', 'tooltip__heading');
+		var tt_income = tooltip.append('p')
+				.attr('class', 'tooltip__info');
+		var tt_rent = tooltip.append('p')
+				.attr('class', 'tooltip__info');
+
+		var tt_mean_commute = tooltip.append('p')
+				.attr('class', 'tooltip__info tooltip__info--new-section');
+		var tt_long_commute = tooltip.append('p')
+				.attr('class', 'tooltip__info');
+
+		return [tooltip, tt_heading, tt_income, tt_rent, tt_mean_commute, tt_long_commute];
+	}
+
+	function updateTooltip_incomeCommute(tooltip_elements, d) {
+
+		//set tooltip values
+		tooltip_elements[1].text(d['clean_name']);
+		tooltip_elements[2].text('Median Household Income: ' + formatDollars(d.med_hh_income_est));
+		tooltip_elements[3].text('Median Rent: ' + formatDollars(d.zillow_2014_12));
+		tooltip_elements[4].text('Average Commute Time: ' + commaSeparateNumber(d.mean_travel_time_2014) + " min");
+		tooltip_elements[5].text(formatPercentWhole(d.commute_60plus_2014) + ' of commutes take 60+ minutes');
+	}
+
+	var commute_cols = {'x1': "zillow_2014_12", 'x2': null, 'y1': 'mean_travel_time_2014', 'y2': 'commute_60plus_2014'}
+	
+	var commute_labels = {'x1': "Median Monthly Rent", 'x2':null, 'y1': "Average Inbound Commute Time (Min)", 'y2': "60+ Minute Commutes"}
+
+	var commute_axis_formats = {'x1': formatDollars, 'x2': null, 'y1': null, 'y2': formatPercentWhole}
+
+	var commute_btn_ids = {'x1': null, 'x2': null, 'y1': "#commute-plot-toggle-mean", 'y2':"#commute-plot-toggle-long"}
+
+
+	commute_scatterplot = scatterplot('#inbound-scatterplot', data, commute_cols, commute_labels, commute_axis_formats, commute_btn_ids, buildTooltip_incomeCommute, updateTooltip_incomeCommute);
+
+	/**** Jobs vs housing tornado chart ******/
+	jobs_housing_tornado = tornado('#jobs-housing-tornado', data);
+	
+});

@@ -8,7 +8,8 @@
 
 <title>In search of cheaper housing, Silicon Valley workers face long commutes</title>
 
-	<!-- d3 library -->
+	<!-- scripts -->
+	<script type="text/javascript" src="assets/scripts/modernizr-custom.min.js"></script>
 	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
 	<!-- stylesheet -->
@@ -23,52 +24,103 @@
 
 <h1 class="article__title">In search of cheaper housing, <br />Silicon Valley workers face long commutes</h1>
 
-<p>As rents skyrocket across Silicon Valley, a growing number of workers have been priced out of job centers like Mountain View and Palo Alto.</p>
+<p><em>I'm 80% confident that I can lead with the story of a worker who commutes into Silicon Valley from Healdsburg since his rent jumped 50%. He's agreed to be in the story, but I haven't had the chance to interview him yet.</em></p>
 
-<p>Over the past five years, places with cheaper rents and lower median incomes have grown faster than the more affluent areas of Santa Clara and San Mateo counties.</p>
+<p>Data from the US Census Bureau show that as Silicon Valley rents have skyrocketed over the past several years, workers have moved out to more affordable areas. That's driven up commute times, 
 
-<p>Yet this shift away from expensive tech hubs comes at the cost of longer commutes, as workers have to drive further to get to their jobs.</p>
+since these workers have to travel longer distances to get to their jobs on the Peninsula.</p>
+
 
 <h2>Rising Rents</h2>
 
-<p>The booming tech economy has drawn more workers to Silicon Valley, but housing construction hasn’t kept pace. Between 2010 and 2014, Santa Clara and San Mateo counties gained around XXXXXXX new jobs, but only added XXXX additional housing units.</p>
+<p>The booming tech economy has drawn more workers to Silicon Valley, but housing construction hasn’t kept pace. Between 2010 and 2014, Santa Clara and San Mateo counties gained at least 167,000 new jobs, but only added 22,000 additional housing units.</p>
 
-<p>This imbalance between jobs and housing is even worse at the local level. The region’s jobs tend to be clustered in affluent cities like Palo Alto, Mountain View, and Santa Clara, while what new housing has been built in mostly located WHERE - CHECK DATA.</p>
+<figure class="figure figure--small" id="jobs-housing-line">
+<!-- 	<figcaption class="figure__info figure__info--push-left">WHY IS THIS SO DIFFERENT FROM THE NUMBERS IN MY LAST STORY? WHERE WERE THOSE FROM?</figcaption>
+ --></figure>
 
-<p>With the demand for housing near jobs vastly outstripping supply, rents have skyrocketed in cities with major tech presences. OR JUST ACROSS THE PENINSULA - CHECK DATA</p>
+<p>This imbalance between jobs and housing is even worse at the local level. The region’s jobs tend to be clustered in affluent cities like Palo Alto, Mountain View, and Santa Clara, which don't have nearly enough homes for their workforces.</p>
+
+<figure class="figure" id="jobs-housing-tornado">
+</figure>
+
+<p>“The amount of housing being built is so small compared to the growth in demand that it is causing the region to become much more unaffordable,” said Dave Vautin, a planner for the regional Metropolitan Transportation Commission.</p>
+
+<p>With more people jockeying for a home near work, rents have climbed across the Peninsula &mdash; especially in the cities with worst worker-to-housing imbalances.</p>
+
+<figure class="figure" id="rents-line">
+	<figcaption class="figure__info">Zillow rent data are only available from Nov. 2010 onwards.</figcaption>
+</figure>
 
 <h2>Moving Away</h2>
 
 <p>Priced out of these expensive mid-Peninsula cities, Silicon Valley workers have been moving to places with more affordable living costs. Between 2010 and 2014, the population grew faster in areas with lower median rents and household incomes:</p>
 
-<figure class="figure" id="pop-rent-income">
+<figure class="figure" id="pop-rent-income-scatterplot">
 
 	<div class="plot-toggle">
-		<button class="plot-toggle__btn plot-toggle__btn--selected" id="pop-plot-toggle-rent">Rent</button>
-		<button class="plot-toggle__btn" id="pop-plot-toggle-income">Income</button>
+		<button class="plot-toggle__btn plot-toggle__btn--selected" id="pop-plot-toggle-income">Income</button>
+		<button class="plot-toggle__btn" id="pop-plot-toggle-rent">Rent</button>
 	</div>
 
-	<figcaption class="figure__info">To enable comparisons with inbound commuting data, population is the number of workers who lived in a Census-designated place.<br />Growth is measured between 2010 and 2014.</figcaption>
+	<figcaption class="figure__info">To enable comparisons with inbound commuting data, population is the number of commuting workers who lived in a Census-designated place.<br />Growth is measured between 2010 and 2014.</figcaption>
 </figure>
 
-<p>Down at the south end of Santa Clara county, for example, Gilroy — where the median household income in 2014 was $81,000 [CHECK] — grew from ___ people in 2010 to _____ in 2014. In Menlo Park, where the average household made $115,650, the population actually dropped by ____.</p>
+<p>Down at the south end of Santa Clara county, for example, Gilroy &mdash; where the median household income in 2014 was $81,056 &mdash; grew 10 percent from 2010 to 2014. In Menlo Park, where the average household made $115,650, the population actually dropped by about 100 people.</p>
 
 <h2>Long Commutes</h2>
 
-<p>Yet lower rents come at the price of longer commutes, since workers who live in more affordable outlying areas have to travel further to get to their jobs. The average commute time for people who work in Silicon Valley has risen from __ in 2010 to __ in 2014, and the proportion of workers who travel an hour or more to get to work has jumped?? __ FINISH.</p>
+<p>Yet lower rents come at the price of longer commutes, since workers who live in cheaper outlying areas have to travel further to get to their jobs. The average commute time for people who work in Silicon Valley has risen from 28 minutes in 2010 to 32 in 2014, and the proportion of workers who travel an hour or more to get to work has jumped from 10 to nearly 15 percent.</p>
 
-<p>These increases are driven by workers commuting into high-income, high-rent job centers like Mountain View and Palo Alto, which have some of the longest inbound travel times in Silicon Valley.</p>
+<div class="grid">
+	<div class="grid__item">
+		<h3 class="figure__heading">Mean Commute Time</h3>
+		<figure class="figure figure--two-aside" id="commutes-mean-line">
+		</figure>
+	</div>
+
+	<div class="grid__item">
+		<h3 class="figure__heading">60+ Minute Commutes</h3>
+		<figure class="figure figure--two-aside" id="commutes-long-line">
+		</figure>
+	</div>	
+</div>
+
+<p>These increases are driven by workers commuting into high-income, high-rent job centers like Palo Alto and Menlo Park, which have some of the longest inbound travel times in Silicon Valley:</p>
 
 
 <figure class="figure" id="inbound-scatterplot">
 
-	<!-- <div class="plot-toggle">
-		<button class="plot-toggle__btn plot-toggle__btn--selected" id="pop-plot-toggle-rent">Rent</button>
-		<button class="plot-toggle__btn" id="pop-plot-toggle-income">Income</button>
-	</div> -->
-
-	<figcaption class="figure__info">To enable comparisons with inbound commuting data, population is the number of workers who lived in a Census-designated place.<br />Growth is measured between 2010 and 2014.</figcaption>
+	<div class="plot-toggle">
+		<button class="plot-toggle__btn plot-toggle__btn--selected" id="commute-plot-toggle-mean">Mean Commutes</button>
+		<button class="plot-toggle__btn" id="commute-plot-toggle-long">Long Commutes</button>
+	</div>
 </figure>
+
+<p>Vautin noted that there’s an important disparity in those commute times. The highly paid technical and business services workers who live in core Silicon Valley cities have relatively short commute times, since they typically work nearby. It’s lower-wage service sector workers — security guards at tech campuses, waiters at restaurants — who are spending much more time in traffic.</p>
+
+<p>“If you can afford to live in Silicon Valley, you’re actually in pretty good shape when it comes to commuting,” he said. “It’s the folks who can’t afford it and thus have to live really far away that are suffering.”</p>
+
+<h2>Stemming the Sprawl</h2>
+
+<p>Policy experts argue that the key to bringing commute times under control is to address the underlying housing shortage. By building higher-density housing &mdash; apartment buildings, townhouses, and the like &mdash; near worksites and along public transit corridors, planners hope to house more Silicon Valley workers on the Peninsula and reduce the need to commute from outlying areas.</p>
+
+<p>That kind of dense housing can be a hard sell in suburban Silicon Valley, where residents often fight new construction they fear will worsen traffic and change the character of their communities.</p>
+
+<p>“As soon as a project proponent arrives at City Hall with a multi-family development idea, the pitchforks are sharpened and the flaming torches are lit,” said Matt Regan, a regional planning expert at the business-backed Bay Area Council. Because of such opposition, Regan said, the Bay Area as a whole has approved permits for just 53% of the housing it was projected to need WHEN.</p>
+
+<p>Still, there are signs the <a href="http://peninsulapress.com/2015/12/17/innovating-bay-area-suburbia-transit-oriented-development/" target="_blank">worsening housing crunch is making residents more amenable to growth.</a> Voters in Mountain View elected a pro-housing majority to the city council in 2014, community groups in several Peninsula cities are organizing to support new development, and Redwood City is building a cluster of tall new office and apartment buildings near its downtown Caltrain station.</p>
+
+<p>Ultimately, how much Silicon Valley cities are willing to grow will affect everything from the region’s carbon footprint to its economic productivity. “The Bay Area traditionally has not been the fastest growing region in the state,” said Vautin, and so it has been ill-prepared for the influx of new arrivals. “This is the critical issue of the decade here.”</p>
+
+<section class="story-notes">
+	<h3>Data Sources</h3>
+
+	<p>Data on household incomes, population growth, housing units, and commute times come from the U.S. Census Bureau's American Community Survey. To ensure sufficiently large sample sizes in small places like North Fair Oaks, most numbers are 5-year rolling averages &mdash; an estimate for 2013, for example, will be the average of responses from 2009 through 2013. This means that changes over time are likely under-estimated, and may in fact be higher than the numbers shown here.</p>
+
+	<p>Rent data are from the <a href="http://www.zillow.com/research/zillow-rent-index-methodology-2393/" target="_blank">Zillow Rent Index</a>, a measure of the median asking rent for multi-family apartments.</p>
+
+</section>
 
 </article>
 
