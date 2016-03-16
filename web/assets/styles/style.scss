@@ -12,6 +12,7 @@ GENERAL STYLES
 /*Colors*/
 $slate: #58646D;
 $blue: #5683B0;
+// $blue: #5683B0;
 $grey-mid: #888;
 $grey-light: #ccc;
 $grey-dark: #666;
@@ -64,12 +65,12 @@ p {
 }
 
 a {
-	color: $blue;
+	color: $red-dark;
 	border-bottom: 1px solid rgba(0,0,0,0);
 	transition: all $transition-time-ease;
 
 	&:hover {
-		border-color: $blue;
+		border-color: $red-dark;
 	}
 }
 
@@ -83,12 +84,12 @@ BASIC LAYOUT
 	padding: 3em;
 	max-width: 900px;
 
-	> p:first-of-type:first-letter {
-		font-size: 70px;
-		float: left;
-		line-height: 60px;
-		padding: 4px 10px 0 0;
-	}
+	// > p:first-of-type:first-letter {
+	// 	font-size: 70px;
+	// 	float: left;
+	// 	line-height: 60px;
+	// 	padding: 4px 10px 0 0;
+	// }
 }
 
 .article__title {
@@ -170,8 +171,8 @@ Data Graphics
 //=====
 
 $hover-color: $red-light;
-$workers-color: $red-dark;
-$housing-color: $grey-dark;
+$workers-color: #147F14;
+$housing-color: $blue;
 
 /**** axes ****/
 .axis path,
@@ -218,6 +219,14 @@ $housing-color: $grey-dark;
 	stroke: $workers-color;
 }
 
+.line--housing-units {
+	stroke: $housing-color;
+}
+
+.line--residents {
+	stroke: $housing-color;
+}
+
 .line__label {
 	font-size: .875em;
 	fill: $grey-dark;
@@ -225,6 +234,14 @@ $housing-color: $grey-dark;
 
 .line__label--workers {
 	fill: $workers-color;
+}
+
+.line__label--housing-units {
+	fill: $housing-color;
+}
+
+.line__label--residents {
+	fill: $housing-color;
 }
 
 // thinner lines on rent chart
@@ -272,6 +289,15 @@ $housing-color: $grey-dark;
 .tornado__label {
 	fill: $grey-dark;
 	font-size: .875em;
+}
+.tornado__label--workers, .tornado__label--housing {
+	font-weight: 300;
+}
+
+.tornado__row:hover {
+	.tornado__label--place {
+		font-weight: 700;
+	}
 }
 
 // tornado key
@@ -364,6 +390,7 @@ $housing-color: $grey-dark;
 	width: 50%;
 	box-sizing: border-box;
 	background-color: lighten($grey-light, 10%);
+	background-color: #FFF;
 	border: 1px solid $grey-dark;
 	padding: .4em .25em;
 	color: $black;
@@ -383,12 +410,15 @@ $housing-color: $grey-dark;
 
 	// hover styles
 	&:hover {
-		color: $red-light;
+		color: $red-dark;
 	}
 }
 
 .plot-toggle__btn--selected {
 	background-color: #FFF;
+	background-color: lighten($grey-light, 10%);
+	box-shadow: inset 0 1px 3px rgba(0,0,0,.2);
+
 
 	// hover styles
 	&:hover {

@@ -207,7 +207,6 @@ function scatterplot(wrapper_id, data, cols, labels, axis_formats, btn_ids,  bui
 		}
 	}
 
-
 	/*************
 	AXES
 	*************/
@@ -493,10 +492,9 @@ function tornado(wrapper_id, data) {
 	var wrapper_width = wrapper.node().getBoundingClientRect().width;
 
 	var bar_height = 25,
-		bar_space = 5,
-		label_margin = 70;
+		bar_space = 5;
 
-	var margin = {top: 35, right: 0, bottom: 0, left: 0},
+	var margin = {top: 35, right: 150, bottom: 0, left: 150},
 		width = wrapper_width - margin.left - margin.right,
 		height = ((bar_height + bar_space) * workers_series.length);
 
@@ -513,7 +511,7 @@ function tornado(wrapper_id, data) {
 	// prep scales
 	var workers_scale = d3.scale.linear()
 		.domain([0, d3.max(workers_series)])
-		.range([0, width/2 - label_margin]);
+		.range([0, width/2]);
 
 	var y_scale = d3.scale.linear()
 		.domain([0, ratio_series.length])
@@ -550,31 +548,66 @@ function tornado(wrapper_id, data) {
 			return workers_scale(d.total_workers_2014);
 		})
 		.attr("x", function(d){
-			return width/2 - workers_scale(d.total_workers_2014);
+			return width/2 - workers_scale(d.total_workers_2014) - 1;
 		})
 		.attr("height", bar_height);
 
-	var labels = rows.append("text")
-		.attr("class", "tornado__label")
+	var place_labels = rows.append("text")
+		.attr("class", "tornado__label tornado__label--place")
 		.text(function(d) {
 			return d.clean_name;
 		})
+		.attr("x", function(){
+			return margin.left * -1;
+		})
+		.attr("y", 17)
+		.attr("text-anchor", "start");
+
+	var worker_labels = rows.append("text")
+		.attr("class", "tornado__label tornado__label--workers")
+		.text(function(d) {
+			return commaSeparateNumber(d.total_workers_2014);
+		})
 		.attr("x", function(d){
-			if (d.workers_housing_ratio_2014 > 1) {
-				x = width/2 - workers_scale(d.total_workers_2014) - 10;
-			} else {
-				x = width/2 + workers_scale(d.housing_units_est_2014) + 10;
-			}
+			x = width/2 - workers_scale(d.total_workers_2014) - 10;
 			return x;
 		})
-		.attr("y", 16)
-		.attr("text-anchor", function(d){
-			if (d.workers_housing_ratio_2014 > 1) {
-				return "end";
-			} else {
-				return "start";
-			}
-		});
+		.attr("y", 17)
+		.attr("text-anchor", "end");
+
+	var housing_labels = rows.append("text")
+		.attr("class", "tornado__label tornado__label--housing")
+		.text(function(d) {
+			return commaSeparateNumber(d.housing_units_est_2014);
+		})
+		.attr("x", function(d){
+			x = width/2 + workers_scale(d.housing_units_est_2014) + 10;
+			return x;
+		})
+		.attr("y", 17)
+		.attr("text-anchor", "start");
+
+	// var labels = rows.append("text")
+	// 	.attr("class", "tornado__label")
+	// 	.text(function(d) {
+	// 		return d.clean_name;
+	// 	})
+	// 	.attr("x", function(d){
+	// 		if (d.workers_housing_ratio_2014 > 1) {
+	// 			x = width/2 - workers_scale(d.total_workers_2014) - 10;
+	// 		} else {
+	// 			x = width/2 + workers_scale(d.housing_units_est_2014) + 10;
+	// 		}
+	// 		return x;
+	// 	})
+	// 	.attr("y", 16)
+	// 	.attr("text-anchor", function(d){
+	// 		if (d.workers_housing_ratio_2014 > 1) {
+	// 			return "end";
+	// 		} else {
+	// 			return "start";
+	// 		}
+	// 	});
 
 
 	/*************
@@ -751,12 +784,12 @@ d3.csv("assets/data/acs_county_data.csv", function(error, data) {
 
 
 	/**** Commute times line charts ****/
-	var commutes_long_vars = ["commute_60plus"],
-		commutes_mean_vars = ["mean_travel_time"],
-		commutes_labels = [""],
-		commutes_margin = {top: 10, right: 15, bottom: 30, left: 69};
+	var commutes_long_vars = ["commute_60plus", "commute_60plus_outbound"],
+		commutes_mean_vars = ["mean_travel_time", "mean_travel_time_outbound"],
+		commutes_labels = ["Workers", "Residents"],
+		commutes_margin = {top: 10, right: 70, bottom: 30, left: 69};
 
-	var commutes_mean_line = line('#commutes-mean-line', commutes_margin, data, "acs_year", commutes_mean_vars, commutes_labels, null, "Minutes", parseYear);
+	var commutes_mean_line = line('#commutes-mean-line', commutes_margin, data, "acs_year", commutes_mean_vars, commutes_labels, null, "Minutes");
 
 	var commutes_long_line = line('#commutes-long-line', commutes_margin, data, "acs_year", commutes_long_vars, commutes_labels, formatPercentWhole, null);
 
@@ -802,6 +835,7 @@ d3.csv("assets/data/acs_data.csv", function(data) {
 		d.med_hh_income_est = + d.med_hh_income_est;
 		d.mean_travel_time_2014 = +d.mean_travel_time_2014;
 		d.commute_60plus_2014 = +d.commute_60plus_2014;
+		d.commute_60plus_2014_outbound = +d3.round(d.commute_60plus_2014_outbound * 100, 1);
 		d.total_workers_2014 = +d.total_workers_2014;
 		d.housing_units_est_2014 = +d.housing_units_est_2014;
 		d.workers_housing_ratio_2014 = +d.workers_housing_ratio_2014;
@@ -884,20 +918,33 @@ d3.csv("assets/data/acs_data.csv", function(data) {
 		tooltip_elements[1].text(d['clean_name']);
 		tooltip_elements[2].text('Median Household Income: ' + formatDollars(d.med_hh_income_est));
 		tooltip_elements[3].text('Median Rent: ' + formatDollars(d.zillow_2014_12));
-		tooltip_elements[4].text('Average Commute Time: ' + commaSeparateNumber(d.mean_travel_time_2014) + " min");
-		tooltip_elements[5].text(formatPercentWhole(d.commute_60plus_2014) + ' of commutes take 60+ minutes');
+		tooltip_elements[4].text(formatPercentWhole(d.commute_60plus_2014) + ' of workers have 60+ min commutes');
+		tooltip_elements[5].text(formatPercentWhole(d.commute_60plus_2014_outbound) + ' of residents have 60+ min commutes');
 	}
 
-	var commute_cols = {'x1': "zillow_2014_12", 'x2': null, 'y1': 'mean_travel_time_2014', 'y2': 'commute_60plus_2014'}
+	// var commute_cols = {'x1': "zillow_2014_12", 'x2': null, 'y1': 'mean_travel_time_2014', 'y2': 'commute_60plus_2014'}
 	
-	var commute_labels = {'x1': "Median Monthly Rent", 'x2':null, 'y1': "Average Inbound Commute Time (Min)", 'y2': "60+ Minute Commutes"}
+	// var commute_labels = {'x1': "Median Monthly Rent", 'x2':null, 'y1': "Average Inbound Commute Time (Min)", 'y2': "60+ Minute Commutes"}
 
-	var commute_axis_formats = {'x1': formatDollars, 'x2': null, 'y1': null, 'y2': formatPercentWhole}
+	// var commute_axis_formats = {'x1': formatDollars, 'x2': null, 'y1': null, 'y2': formatPercentWhole}
 
-	var commute_btn_ids = {'x1': null, 'x2': null, 'y1': "#commute-plot-toggle-mean", 'y2':"#commute-plot-toggle-long"}
+	// var commute_btn_ids = {'x1': null, 'x2': null, 'y1': "#commute-plot-toggle-mean", 'y2':"#commute-plot-toggle-long"}
+
+	// var commute_scatterplot = scatterplot('#inbound-scatterplot', data, commute_cols, commute_labels, commute_axis_formats, commute_btn_ids, buildTooltip_incomeCommute, updateTooltip_incomeCommute);
 
 
-	commute_scatterplot = scatterplot('#inbound-scatterplot', data, commute_cols, commute_labels, commute_axis_formats, commute_btn_ids, buildTooltip_incomeCommute, updateTooltip_incomeCommute);
+	console.log(data);
+
+	var outbound_commute_cols = {'x1': "zillow_2014_12", 'x2': null, 'y1': 'commute_60plus_2014', 'y2': 'commute_60plus_2014_outbound'}
+
+	var outbound_commute_btn_ids = {'x1': null, 'x2': null, 'y1': "#commute-plot-toggle-inbound", 'y2':"#commute-plot-toggle-outbound"}
+
+	var outbound_commute_axis_formats = {'x1': formatDollars, 'x2': null, 'y1': formatPercentWhole, 'y2': formatPercentWhole}
+
+	var outbound_commute_labels = {'x1': "Median Monthly Rent", 'x2':null, 'y1': "60+ Minute Commutes", 'y2': "60+ Minute Commutes"}
+
+
+	var outbound_commute_scatterplot = scatterplot('#outbound-scatterplot', data, outbound_commute_cols, outbound_commute_labels, outbound_commute_axis_formats, outbound_commute_btn_ids, buildTooltip_incomeCommute, updateTooltip_incomeCommute);
 
 	/**** Jobs vs housing tornado chart ******/
 	jobs_housing_tornado = tornado('#jobs-housing-tornado', data);
