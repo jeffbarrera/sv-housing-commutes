@@ -767,7 +767,7 @@ LOAD DATA
 ****************************************************/
 
 // COUNTY-LEVEL DATA
-d3.csv("assets/data/acs_county_data.csv", function(error, data) {
+d3.csv("jbarrera-assets/housing-commutes/assets/data/acs_county_data.csv", function(error, data) {
 	if (error) throw error;
 
 	// parse dates
@@ -799,7 +799,7 @@ d3.csv("assets/data/acs_county_data.csv", function(error, data) {
 
 
 // TIME-SERIES RENT DATA
-d3.csv("assets/data/zillow-rents.csv", function(error, data) {
+d3.csv("jbarrera-assets/housing-commutes/assets/data/zillow-rents.csv", function(error, data) {
 	if (error) throw error;
 
 	// parse dates
@@ -823,7 +823,7 @@ d3.csv("assets/data/zillow-rents.csv", function(error, data) {
 
 
 // PLACE-LEVEL DATA
-d3.csv("assets/data/acs_data.csv", function(data) {
+d3.csv("jbarrera-assets/housing-commutes/assets/data/acs_data.csv", function(data) {
 
 	// clean dataset
 	data = data.filter(function(d){
